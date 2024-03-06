@@ -1,0 +1,810 @@
+<head>
+	<title>Link Attack!!</title>
+	<meta charset="UTF-8">
+</head>
+<body>
+<br>
+<canvas id="myCanvas" width="1000" height="500" style="border:1px solid #cccccc;"></canvas>
+
+<script type="text/javascript">
+
+class Sprite
+{
+	constructor(x1, y1, w1, h1, image_url)
+	{
+		this.x = x1;
+		this.y = y1;
+		this.w = w1;
+        this.h = h1;
+		this.image = new Image();
+		this.image.src = image_url;
+	}
+
+	isLink(){
+		return false;
+	}
+
+	isBoomerang(){
+		return false;
+	}
+
+	isPot(){
+		return false;
+	}
+
+	isTile(){
+		return false;
+	}
+
+}
+
+
+class Link extends Sprite
+{
+	constructor(x, y, w, h, image_url)
+	{
+		super(x, y, w, h, image_url);
+        this.speed = 10;
+
+		this.prev_x = 0;
+		this.prev_y = 0;
+
+		this.direction = 0;
+		this.current_image_index = 0;
+
+		this.link_images = [];
+
+
+			for(let i = 1; i <= 52; i++){
+				if(i < 10){
+					this.link_images.push("linkImages/link0" + i + ".png");
+
+					//console.log("linkImages/link0" + i + ".png loaded");
+					
+				}
+				else{
+					this.link_images.push("linkImages/link" + i + ".png");
+
+					//console.log("linkImages/link" + i + ".png loaded");
+					
+				}
+			}
+	}
+
+
+	isLink(){
+		return true;
+	}
+
+	toString(){
+		return "Link at (" + this.x + ", " + this.y + ") dimensions: " + this.w + " x " + this.h + "";
+	}
+
+	update()
+	{
+		this.image.src = this.link_images[this.current_image_index + this.direction * 13];
+		return true;
+	}
+
+	updateDirection(direction){
+		this.direction = direction;
+
+		this.current_image_index++;
+
+		if(this.direction == 3){
+			if(this.current_image_index >= 11){
+				this.current_image_index = 0;
+			}
+
+		}
+
+		if(this.current_image_index >= 13){
+			this.current_image_index = 0;
+		}
+
+
+
+
+	}
+
+	setPrevious(x, y){
+		this.prev_x = x;
+		this.prev_y = y;
+	}
+
+	gtfoTile(sprigt){
+		if((this.x + this.w >= sprigt.x) && this.prev_x + this.w <= sprigt.x){
+			this.x = sprigt.x - this.h;
+
+		}
+
+		if((this.x <= sprigt.x + sprigt.w) && (this.prev_x >= sprigt.x + sprigt.w)){
+			this.x = sprigt.x + sprigt.w;
+
+
+		}
+
+		if((this.y + this.h >= sprigt.y) && (this.prev_y + this.h <= sprigt.y)){
+			this.y = sprigt.y - this.h;
+
+		}
+
+		if((this.y <= sprigt.y + sprigt.h) && (this.prev_y >= sprigt.y + sprigt.h)){
+			this.y = sprigt.y + sprigt.h;
+
+		}
+	}
+
+	// onclick(x, y)
+	// {
+	// 	this.dest_x = x;
+	// 	this.dest_y = y;
+	// }
+}
+
+class Boomerang extends Sprite{
+	constructor(x, y, w, h, image_url){
+		super(x, y, w, h, image_url);
+
+		this.speed = 13;
+
+		this.x_dir = 0;
+		this.y_dir = 0;
+
+		this.boomerang_images = [];
+		this.current_image_index = 0;
+
+		for(let i = 1; i <= 4; i++){
+			this.boomerang_images.push("boomerangImages/boomerang" + i + ".png");
+		}
+
+
+
+	}
+
+
+	isBoomerang(){
+		return true;
+	}
+
+	toString(){
+		return "Boomerang at (" + this.x + ", " + this.y + ") dimensions: " + this.w + " x " + this.h + "";
+	}
+
+	update(){
+		
+
+        this.x += this.x_dir * this.speed;
+        this.y += this.y_dir * this.speed;
+
+		this.image.src = this.boomerang_images[this.current_image_index % 4];
+		if(this.current_image_index >= 3){
+			this.current_image_index = 0;
+		}
+		this.current_image_index++;
+
+		return true;
+
+	}
+
+	updateDirection(linkDirection){
+		if(linkDirection == 0){
+			this.y_dir = 1;
+			this.x_dir = 0;
+
+		}
+
+		else if(linkDirection == 1){
+			this.y_dir = 0;
+			this.x_dir = -1;
+
+		}
+
+		else if(linkDirection == 2){
+			this.y_dir = 0;
+			this.x_dir = 1;
+
+
+		}
+
+		else if(linkDirection == 3){
+			this.y_dir = -1;
+			this.x_dir = 0;
+
+		}
+
+
+	}
+
+
+}
+
+class Tile extends Sprite{
+    constructor(x, y, w, h, image_url){
+        super(x, y, w, h, image_url);
+
+		this.speed = 13;
+		this.x_dir = 0;
+		this.y_dir = 0;
+
+    }
+
+	isTile(){
+		return true;
+	}
+
+	toString(){
+		return "Tile at (" + this.x + ", " + this.y + ") dimensions: " + this.w + " x " + this.h + "";
+	}
+
+    update(){
+		return true;
+        //this.move(0, 0);
+    }
+}
+
+class Pot extends Sprite{
+	constructor(x, y, w, h, image_url){
+		super(x, y, w, h , image_url);
+
+		this.x_dir = 0;
+		this.y_dir = 0;
+
+		this.speed = 13;
+		this.countdown = 100;
+
+		this.broken = false;
+	}
+
+
+
+	isPot(){
+		return true;
+	}
+
+	toString(){
+		return "Pot at (" + this.x + ", " + this.y + ") dimensions: " + this.w + " x " + this.h + "";
+	}
+
+	update(){
+
+		if(this.countdown <= 0){
+				return false;
+			}
+
+		if(this.broken == true){
+			this.image.src = "pot_broken.png";
+
+			this.x_dir = 0;
+			this.y_dir = 0;
+			this.speed = 0;
+
+			this.countdown--;
+
+
+
+
+
+			//return false;
+
+		}
+		this.x += this.x_dir * this.speed;
+		this.y += this.y_dir * this.speed;
+		return true;
+	}
+
+	updateDirection(linkDirection){
+        if (linkDirection == 0){
+            this.y_dir = 1;
+            this.x_dir = 0;
+
+        }
+        else if(linkDirection == 1){
+            this.y_dir = 0;
+            this.x_dir = -1;
+
+        }
+        else if(linkDirection == 2){
+            this.y_dir = 0;
+            this.x_dir = 1;
+
+        }
+        else if(linkDirection == 3){
+            this.y_dir = -1;
+            this.x_dir = 0;
+
+        }		
+	}
+}
+
+
+
+
+class Model
+{
+	constructor()
+	{
+		this.sprites = [];
+		//this.sprites.push(new Lettuce(200, 100, 51, "lettuce.png"));
+		this.link = new Link(150, 100, 80, 80, "linkImages/link01.png");
+		//this.boomerang = new Boomerang(100, 100, 50, 50, "boomerangImages/boomerang1.png");
+		this.sprites.push(this.link);
+		//this.sprites.push(this.boomerang);
+
+        let i = 0;
+
+        for(i = 0; i < 2000; i += 50){
+            this.tile = new Tile(i, 0, 50, 50, "tile.jpg");
+            this.sprites.push(this.tile);
+            //console.log("tile added")
+            //this.sprites.push(new Sprite(i, 0, "tile.jpg", Sprite.prototype.sit_still, Sprite.prototype.ignore_click));
+            //console.log("tile added")
+
+        }
+        for(i = 50; i < 1000; i+=50){
+            this.tile = new Tile(0, i, 50, 50, "tile.jpg");
+            this.sprites.push(this.tile);
+            //console.log("tile added")
+
+            //this.sprites.push(new Sprite(0, i, "tile.jpg", Sprite.prototype.sit_still, Sprite.prototype.ignore_click));
+            //console.log("tile added")
+        }
+		for(i = 50; i < 1000; i+=50){
+			this.tile = new Tile(1950, i, 50, 50, "tile.jpg");
+			this.sprites.push(this.tile);
+			//console.log("tile added")
+
+			//this.sprites.push(new Sprite(1950, i, "tile.jpg", Sprite.prototype.sit_still, Sprite.prototype.ignore_click));
+			//console.log("tile added")
+		}
+		for(i = 0; i < 2000; i += 50){
+			this.tile = new Tile(i, 950, 50, 50, "tile.jpg");
+			this.sprites.push(this.tile);
+			//console.log("tile added")
+
+			//this.sprites.push(new Sprite(i, 950, "tile.jpg", Sprite.prototype.sit_still, Sprite.prototype.ignore_click));
+			//console.log("tile added")
+
+		}
+		for(i = 200; i < 1750; i += 50){
+			this.tile = new Tile(i, 450, 50, 50, "tile.jpg");
+			this.sprites.push(this.tile);
+			//console.log("tile added")
+
+			//this.sprites.push(new Sprite(i, 450, "tile.jpg", Sprite.prototype.sit_still, Sprite.prototype.ignore_click));
+			//console.log("tile added")
+
+		}
+
+		for(i = 200; i < 1750; i += 50){
+			this.tile = new Tile(i, 500, 50, 50, "tile.jpg");
+			this.sprites.push(this.tile);
+			//console.log("tile added")
+
+			//this.sprites.push(new Sprite(i, 500, "tile.jpg", Sprite.prototype.sit_still, Sprite.prototype.ignore_click));
+			//console.log("tile added")
+
+		}
+
+		for(i = 500; i < 800; i += 50){
+			this.tile = new Tile(950, i, 50, 50, "tile.jpg");
+			this.sprites.push(this.tile);
+			//console.log("tile added")
+
+			//this.sprites.push(new Sprite(i, 550, "tile.jpg", Sprite.prototype.sit_still, Sprite.prototype.ignore_click));
+			//console.log("tile added")
+
+		}
+		for(i = 500; i < 800; i+= 50){
+			this.tile = new Tile(1000, i, 50, 50, "tile.jpg");
+			this.sprites.push(this.tile);
+			//console.log("tile added")
+
+			//this.sprites.push(new Sprite(1450, i, "tile.jpg", Sprite.prototype.sit_still, Sprite.prototype.ignore_click));
+			//console.log("tile added")
+		}
+
+		for(i = 50; i < 300; i+= 50){
+			this.tile = new Tile(950, i, 50, 50, "tile.jpg");
+			this.sprites.push(this.tile);
+		}
+		for(i = 50; i < 300; i += 50){
+			this.tile = new Tile(1000, i, 50, 50, "tile.jpg");
+			this.sprites.push(this.tile);
+		}
+
+		this.tile = new Tile(150, 200, 50, 50, "tile.jpg");
+		this.sprites.push(this.tile);
+
+		// this.tile = new Tile(200, 200, 50, 50, "tile.jpg");
+		// this.sprites.push(this.tile);
+
+		this.tile = new Tile(250, 200, 50, 50, "tile.jpg");
+		this.sprites.push(this.tile);
+
+		this.tile = new Tile(550, 400, 50, 50, "tile.jpg");
+		this.sprites.push(this.tile);
+
+		this.tile = new Tile(600, 350, 50, 50, "tile.jpg");
+
+		this.tile = new Tile(1300, 700, 50, 50, "tile.jpg");
+		this.sprites.push(this.tile);
+
+		// this.tile = new Tile(250, 150, 50, 50, "tile.jpg");
+		// this.sprites.push(this.tile);
+
+		this.tile = new Tile(450, 250, 50, 50, "tile.jpg");
+		this.sprites.push(this.tile);
+
+		//this.tile = new Tile(850, 350, 50, 50, "tile.jpg");
+		//this.sprites.push(this.tile);
+
+		this.tile = new Tile(1050, 450, 50, 50, "tile.jpg");
+		this.sprites.push(this.tile);
+
+		this.tile = new Tile(1550, 550, 50, 50, "tile.jpg");
+		this.sprites.push(this.tile);
+
+		this.tile = new Tile(1650, 650, 50, 50, "tile.jpg");
+		this.sprites.push(this.tile);
+
+		this.tile = new Tile(1500, 750, 50, 50, "tile.jpg");
+		this.sprites.push(this.tile);
+
+		this.tile = new Tile(150, 750, 50, 50, "tile.jpg");
+		this.sprites.push(this.tile);
+
+		this.tile = new Tile(250, 750, 50, 50, "tile.jpg");
+		this.sprites.push(this.tile);
+
+		this.tile = new Tile(200, 800, 50, 50, "tile.jpg");
+		this.sprites.push(this.tile);
+
+		this.tile = new Tile(250, 800, 50, 50, "tile.jpg");
+		this.sprites.push(this.tile);
+
+		this.tile = new Tile(150, 800, 50, 50, "tile.jpg");
+		this.sprites.push(this.tile);
+
+		this.tile = new Tile(100, 850, 50, 50, "tile.jpg");
+		this.sprites.push(this.tile);
+
+		this.tile = new Tile(150, 850, 50, 50, "tile.jpg");
+		this.sprites.push(this.tile);
+
+		this.tile = new Tile(200, 850, 50, 50, "tile.jpg");
+		this.sprites.push(this.tile);
+
+		this.tile = new Tile(250, 850, 50, 50, "tile.jpg");
+		this.sprites.push(this.tile);
+
+		// for (i = 0; i < 4; i++) {
+		// 	for (let j = 0; j <= i; j++) {
+		// 		this.tile = new Tile(500 + 50*i - 50*j, 550 - 50*i - 50*j, 50, 50, "tile.jpg");
+		// 		this.sprites.push(this.tile);
+		// 		//console.log("tile added");
+		// 	}
+		// }
+
+		this.tile = new Tile(1350, 400, 50, 50, "tile.jpg");
+		this.sprites.push(this.tile);
+
+		this.tile = new Tile(1400, 400, 50, 50, "tile.jpg");
+		this.sprites.push(this.tile);
+
+		this.tile = new Tile(1450, 400, 50, 50, "tile.jpg");
+		this.sprites.push(this.tile);
+
+		this.tile = new Tile(1500, 400, 50, 50, "tile.jpg");
+		this.sprites.push(this.tile);
+
+		this.tile = new Tile(1550, 400, 50, 50, "tile.jpg");
+		this.sprites.push(this.tile);
+
+		this.tile = new Tile(1400, 350, 50, 50, "tile.jpg");
+		this.sprites.push(this.tile);
+
+		this.tile = new Tile(1450, 350, 50, 50, "tile.jpg");
+		this.sprites.push(this.tile);
+
+		this.tile = new Tile(1500, 350, 50, 50, "tile.jpg");
+		this.sprites.push(this.tile);
+
+		this.tile = new Tile(1450, 300, 50, 50, "tile.jpg");
+		this.sprites.push(this.tile);
+
+
+		this.pot = new Pot(500, 150, 50, 50, "pot.png");
+		this.sprites.push(this.pot);
+
+		this.pot = new Pot(850, 350, 50, 50, "pot.png");
+		this.sprites.push(this.pot);
+
+		this.pot = new Pot(1450, 200, 50, 50, "pot.png");
+		this.sprites.push(this.pot);
+
+		this.pot = new Pot(1300, 600, 50, 50, "pot.png");
+		this.sprites.push(this.pot);
+
+		this.pot = new Pot(750, 850, 50, 50, "pot.png");
+		this.sprites.push(this.pot);
+
+		this.pot = new Pot(800, 150, 50, 50, "pot.png");
+		this.sprites.push(this.pot);
+
+
+
+
+
+	}
+
+	addBoomerang(){
+		//this.sprites.push(this.boomerang);
+		this.boomerang = new Boomerang(this.link.x, this.link.y , 25, 25, "boomerangImages/boomerang1.png");
+		this.sprites.push(this.boomerang);
+		this.boomerang.updateDirection(this.link.direction);
+
+	}
+	//collision(spr1, spr2){}
+
+	update()
+	{
+
+		//console.log(this.sprites.length);
+		//console.log(this.sprites.length);
+
+		for(let i = 0; i < this.sprites.length; i++){
+			//console.log(typeof this.sprites[i]);
+			//console.log(this.sprites[i].x);
+			// if((typeof this.sprites[i].x !== "number") || (typeof this.sprites[i].y !== "number")|| (typeof this.sprites[i].w !== "number") || (typeof this.sprites[i].h !== "number")){
+			// 	console.log("alert");
+			// }
+
+
+			this.sprites[i].update();
+			if(this.collision(this.sprites[i])){
+				if(this.sprites[i].isTile()){
+					this.link.gtfoTile(this.sprites[i]);
+				}
+				
+				if(this.sprites[i].isBoomerang()){
+					//\\hey girrrl
+
+				}
+				if(this.sprites[i].isPot()){
+					//console.log("coords of colliding pot" + this.sprites[i].x + " " + this.sprites[i].y);
+					//this.link.gtfoTile(this.sprites[i]);
+					this.sprites[i].updateDirection(this.link.direction);
+
+				}
+
+			}
+			
+		}
+
+		//check entire array for collision
+		for(let i = 0; i < this.sprites.length; i++){
+			//console.log(this.sprites[i].isBoomerang());
+			//console.log(this.sprites[i]);
+			if(!this.sprites[i].update()){
+				this.sprites.splice(i, 1);
+				continue;
+			}
+			for(let j = 0; j < this.sprites.length; j++){
+
+				if(this.collision2(this.sprites[i], this.sprites[j])){
+					if(this.sprites[i].isBoomerang() && this.sprites[j].isTile()){
+						this.sprites.splice(i, 1);
+						break;
+					}
+
+					if(this.sprites[i].isBoomerang() && this.sprites[j].isPot()){
+						this.sprites[j].broken = true;
+						this.sprites.splice(i, 1);
+						break;
+					}
+
+					if(this.sprites[i].isTile() && this.sprites[j].isPot()){
+						this.sprites[j].broken = true;
+						break;
+					}
+
+					else{}
+
+
+				}
+				// if(this.sprites[i].isBoomerang() && this.sprites[j].isTile()){
+				// 	this.sprites.splice(i, 1);
+					
+				// }
+				// if(this.sprites[i].isBoomerang() && this.sprites[j].isPot()){
+				// 	this.sprites[j].broken = true;
+				// }
+
+				// if(this.sprites[i].isTile() && this.sprites[j].isPot()){
+				// 	this.sprites[j].broken = true;
+				// }
+			}
+		}
+
+
+
+		for(let i = 0; i < this.sprites.length; i++)
+		{
+			this.sprites[i].update();
+		}
+	}
+
+
+	collision(spr){
+		if(this.link.x + this.link.w < spr.x || this.link.x > spr.x + spr.w){
+			return false;
+		}
+		if(this.link.y + this.link.h < spr.y || this.link.y > spr.y + spr.h){
+			return false;
+		}
+		return true;
+		
+	}
+
+	collision2(s, d){
+
+		if(s.x + s.w <= d.x)
+			return false;
+		if(s.x >= d.x + d.w) // + s.width
+			return false;
+		if(s.y + s.h <= d.y) // assumes bigger is downward
+			return false;
+		if(s.y >= d.y + d.h) // + s.height
+			return false;
+		return true;
+
+	}
+}
+
+
+class View
+{
+	constructor(model)
+	{
+        this.scroll_x = 0;
+        this.scroll_y = 0;
+
+		this.model = model;
+		this.canvas = document.getElementById("myCanvas");
+	}
+
+	update()
+	{
+		let ctx = this.canvas.getContext("2d");
+		ctx.clearRect(0, 0, 1000, 500);
+		for(let i = 0; i < this.model.sprites.length; i++)
+		{
+			let sprite = this.model.sprites[i];
+			ctx.drawImage(sprite.image, sprite.x - this.scroll_x, sprite.y - this.scroll_y, sprite.w, sprite.h);
+		}
+	}
+}
+
+
+
+
+
+
+
+class Controller
+{
+	constructor(model, view)
+	{
+		this.model = model;
+		this.view = view;
+		this.key_right = false;
+		this.key_left = false;
+		this.key_up = false;
+		this.key_down = false;
+		this.key_ctrl = false;
+		let self = this;
+		//view.canvas.addEventListener("click", function(event) { self.onClick(event); });
+		document.addEventListener('keydown', function(event) { self.keyDown(event); }, false);
+		document.addEventListener('keyup', function(event) { self.keyUp(event); }, false);
+	}
+
+	// onClick(event)
+	// {
+	// 	//this.model.onclick(event.pageX - this.view.canvas.offsetLeft, event.pageY - this.view.canvas.offsetTop);
+	// }
+
+	keyDown(event)
+	{
+		if(event.keyCode == 39) this.key_right = true;
+		else if(event.keyCode == 37) this.key_left = true;
+		else if(event.keyCode == 38) this.key_up = true;
+		else if(event.keyCode == 40) this.key_down = true;
+		else if(event.keyCode == 17) this.key_ctrl = true;
+	}
+
+	keyUp(event)
+	{
+		if(event.keyCode == 39) this.key_right = false;
+		else if(event.keyCode == 37) this.key_left = false;
+		else if(event.keyCode == 38) this.key_up = false;
+		else if(event.keyCode == 40) this.key_down = false;
+		else if(event.keyCode == 17) this.key_ctrl = false;
+	}
+
+	update()
+	{
+		// let dx = 0;
+		// let dy = 0;
+        //let speed = 5;
+
+		this.model.link.setPrevious(this.model.link.x, this.model.link.y)
+
+		if(this.key_right) 
+		{
+			this.model.link.updateDirection(2);	
+			//dx+=4;
+            this.model.link.x += this.model.link.speed;
+            if(this.model.link.x > 1000 && this.view.scroll_x != 1000){
+                this.view.scroll_x += 1000;
+            }
+		}
+		if(this.key_left)
+		{
+			this.model.link.updateDirection(1);
+            this.model.link.x -= this.model.link.speed;
+            if(this.model.link.x < 1000 && this.view.scroll_x != 0){
+                this.view.scroll_x -= 1000;
+            }
+
+			//dx-=4;
+		}
+		if(this.key_up){
+			this.model.link.updateDirection(3);
+            this.model.link.y -= this.model.link.speed;
+            if(this.model.link.y < 500 && this.view.scroll_y != 0){
+                this.view.scroll_y -= 500;
+            }
+
+        } //dy-=4;
+		if(this.key_down){
+			this.model.link.updateDirection(0);
+			this.model.link.y += this.model.link.speed;
+			if(this.model.link.y > 500 && this.view.scroll_y != 500){
+				this.view.scroll_y += 500;
+			}
+			
+        } //dy+=4;
+		if(this.key_ctrl){
+			this.model.addBoomerang();
+			this.key_ctrl = false;
+		}
+
+	}
+}
+
+
+
+class Game
+{
+	constructor()
+	{
+		this.model = new Model();
+		this.view = new View(this.model);
+		this.controller = new Controller(this.model, this.view);
+	}
+
+	onTimer()
+	{
+		this.controller.update();
+		this.model.update();
+		this.view.update();
+	}
+}
+
+let game = new Game();
+let timer = setInterval(function() { game.onTimer(); }, 40);
+
+</script>
+
+</body>
